@@ -110,7 +110,7 @@ Writes string content to a specified local file using UTF-8 encoding. Automatica
     "content": "DeepSeek Agent Execution Summary: All operations completed successfully."
   }
 
-## 🛠️ Built-in File Operations
+## Built-in File Operations
 
 ### 3. `read_file`
 Reads and returns the complete text content of a target local file using UTF-8 encoding.
