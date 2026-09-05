@@ -1,0 +1,304 @@
+Metadata-Version: 2.4
+Name: langchain_agent
+Version: 0.1.1
+Summary: A LangChain-based chat agent with tool integration
+Project-URL: Homepage, https://github.com/yourusername/langchain_agent
+Project-URL: Documentation, https://github.com/yourusername/langchain_agent#readme
+Project-URL: Repository, https://github.com/yourusername/langchain_agent.git
+Project-URL: Issues, https://github.com/yourusername/langchain_agent/issues
+Author-email: Your Name <your.email@example.com>
+License: MIT
+License-File: LICENSE
+Keywords: agent,ai,chatbot,langchain,llm
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.10
+Requires-Dist: langchain-ollama>=1.0.0
+Requires-Dist: langchain>=1.0.3
+Requires-Dist: python-dotenv>=1.0.0
+Provides-Extra: dev
+Requires-Dist: black>=23.0.0; extra == 'dev'
+Requires-Dist: flake8>=6.0.0; extra == 'dev'
+Requires-Dist: mypy>=1.0.0; extra == 'dev'
+Requires-Dist: pytest-cov>=4.0.0; extra == 'dev'
+Requires-Dist: pytest>=7.0.0; extra == 'dev'
+Description-Content-Type: text/markdown
+
+# LangChain Agent 聊天应用
+
+一个基于 LangChain 的智能聊天助手，集成了时区查询等实用工具。
+
+[![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+> 📐 本项目采用 [src 布局](STRUCTURE.md)，符合 Python 最佳实践
+
+---
+
+## ✨ 特性
+
+- 🤖 基于 LangChain 的智能对话系统
+- 🛠️ 可扩展的工具系统
+- ⏰ 支持全球时区查询
+- 📝 完善的日志系统
+- ⚙️ 灵活的配置管理
+- 🎨 美观的命令行界面
+
+## 📋 系统要求
+
+- Python >= 3.10
+- Ollama (本地 LLM 服务)
+
+## 🚀 快速开始
+
+### 1. 安装依赖
+
+使用 uv（推荐）:
+```bash
+# 安装基础依赖
+uv sync
+
+# 安装开发依赖（包含测试、代码检查等工具）
+uv sync --extra dev
+```
+
+或使用 pip:
+```bash
+pip install -r requirements.txt
+```
+
+或使用 Makefile:
+```bash
+# 安装基础依赖
+make install
+
+# 安装开发依赖
+make install-dev
+```
+
+### 2. 配置环境变量（可选）
+
+复制示例配置文件:
+```bash
+cp .env.example .env
+```
+
+编辑 `.env` 文件来自定义配置。
+
+### 3. 运行应用
+
+```bash
+python main.py
+```
+
+或使用 Makefile:
+```bash
+make run
+```
+
+## 📁 项目结构
+
+```
+langchain_agent/
+├── 📄 源代码
+│   ├── main.py                    # 应用入口点
+│   └── src/
+│       └── langchain_agent/       # 核心包
+│           ├── __init__.py        # 包初始化
+│           ├── main.py            # 主程序逻辑
+│           ├── config.py          # 配置管理
+│           ├── agent.py           # Agent 封装
+│           ├── tools.py           # 工具函数定义
+│           └── utils.py           # 通用工具函数
+│
+├── 🧪 测试
+│   └── tests/
+│       ├── __init__.py
+│       ├── test_config.py         # 配置测试
+│       └── test_tools.py          # 工具测试
+│
+├── 📜 脚本
+│   └── scripts/
+│       ├── setup.sh               # 自动设置
+│       └── run_tests.sh           # 测试运行
+│
+├── 🐳 部署
+│   ├── Dockerfile                 # Docker 镜像
+│   ├── docker-compose.yml         # 编排配置
+│   └── .env.example               # 环境变量示例
+│
+├── ⚙️ 配置
+│   ├── pyproject.toml             # 项目配置
+│   ├── requirements.txt           # 依赖列表
+│   ├── Makefile                   # 常用命令
+│   └── .gitignore                 # Git 忽略
+│
+└── 📚 文档
+    ├── README.md                  # 主文档（本文件）
+    ├── QUICKSTART.md              # 快速开始
+    ├── ARCHITECTURE.md            # 架构说明
+    ├── CONTRIBUTING.md            # 贡献指南
+    ├── CHANGELOG.md               # 更新日志
+    ├── PROJECT_SUMMARY.md         # 项目总结
+    └── LICENSE                    # MIT 许可证
+```
+
+## 🎮 使用方法
+
+### 基本对话
+
+启动程序后，直接输入问题即可：
+
+```
+😊 You: Hello!
+🤖 AI: Hello! How can I help you today?
+```
+
+### 时区查询
+
+支持查询全球各地的当前时间：
+
+```
+😊 You: What's the current time in Tokyo?
+🤖 AI: The current time in Tokyo is 15:30:45.
+
+😊 You: 北京现在几点了?
+🤖 AI: 北京现在的时间是 14:30:45。
+```
+
+### 命令
+
+- `quit` / `exit` / `q` - 退出程序
+- `help` - 显示帮助信息
+- `clear` - 清空屏幕
+
+## ⚙️ 配置说明
+
+### 环境变量
+
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `LLM_MODEL` | LLM 模型名称 | `gpt-oss` |
+| `LLM_TEMPERATURE` | 温度参数 (0.0-1.0) | `0.0` |
+| `LLM_MAX_TOKENS` | 最大 token 数 | `1000` |
+| `LLM_VERBOSE` | 是否显示详细日志 | `false` |
+| `LLM_API_KEY` | API 密钥（如需要） | - |
+| `AGENT_SYSTEM_PROMPT` | 系统提示词 | 默认助手提示词 |
+
+### 代码配置
+
+也可以直接修改 `config.py` 中的默认值。
+
+## 🔧 添加新工具
+
+在 `src/langchain_agent/tools.py` 中添加新的工具函数：
+
+```python
+@tool
+def your_new_tool(param: str) -> str:
+    """工具描述"""
+    # 实现你的逻辑
+    return result
+
+# 在 get_all_tools() 中添加
+def get_all_tools() -> list:
+    return [get_current_time, your_new_tool]
+```
+
+## 📝 日志
+
+日志默认输出到控制台，可以通过修改 `main.py` 中的 `setup_logging()` 调用来配置：
+
+```python
+setup_logging(level="DEBUG", log_file="app.log")
+```
+
+## 🧪 测试
+
+运行测试:
+```bash
+# 运行所有测试
+make test
+
+# 或直接使用 pytest
+pytest
+
+# 生成覆盖率报告
+make coverage
+```
+
+## 🔍 代码质量
+
+```bash
+# 格式化代码
+make format
+
+# 代码检查
+make lint
+
+# 清理临时文件
+make clean
+```
+
+## 📋 可用的 Make 命令
+
+运行 `make` 或 `make help` 查看所有可用命令：
+
+```bash
+make help
+```
+
+### 开发命令
+- `make install` - 安装依赖
+- `make install-dev` - 安装开发依赖
+- `make install-local` - 安装本地开发版本
+- `make run` - 运行应用
+- `make test` - 运行测试
+- `make coverage` - 生成测试覆盖率报告
+- `make format` - 格式化代码
+- `make lint` - 代码检查
+- `make clean` - 清理临时文件
+
+### 打包与发布命令
+- `make build` - 构建项目包
+- `make build-check` - 检查构建的包
+- `make clean-build` - 清理构建文件
+- `make check-version` - 检查版本信息
+- `make pre-release` - 发布前的完整检查
+- `make publish-test` - 发布到 TestPyPI
+- `make publish` - 发布到 PyPI
+- `make install-from-build` - 从构建包安装
+
+详细的打包与发布指南请参阅:
+- 📦 [PACKAGING_README.md](PACKAGING_README.md) - 打包功能快速入门
+- 📖 [BUILD_GUIDE.md](BUILD_GUIDE.md) - 快速构建指南
+- 📚 [PACKAGING.md](PACKAGING.md) - 完整打包指南
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+贡献步骤：
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+## 📄 许可证
+
+MIT License
+
+## 🙏 致谢
+
+- [LangChain](https://github.com/langchain-ai/langchain)
+- [Ollama](https://ollama.ai/)
+

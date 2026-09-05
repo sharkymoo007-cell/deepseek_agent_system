@@ -1,0 +1,19 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+
+# virtual env
+venv/
+.venv/
+
+# config/key
+.env
+*.key
+
+# log/info
+*.txt
+*.json
+*.log
+__pycache__/
+.pytest_cache/
+
+# VS Code config
+.vscode/
