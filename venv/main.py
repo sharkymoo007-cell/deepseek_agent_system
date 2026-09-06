@@ -1,16 +1,24 @@
 import os
 import sys
+from dotenv import load_dotenv
 from simpleeval import simple_eval
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langchain.agents import create_agent
+from langchain_community.tools.tavily_search import TavilySearchResults
+
+load_dotenv()
 
 # 1. Verify environment parameters(API KEY)
 api_key = os.getenv("DEEPSEEK_API_KEY")
 if not api_key:
     print("ERROR[not found]: Unable to find env var DEEPSEEK_API_KEY, please define!")
     sys.exit(1)
+
+tavily_key = os.getenv("TAVILY_API_KEY")
+if not tavily_key:
+    print("WARNING[not found]: TAVILY_API_KEY not found in environment. Web search may fail if called.")
 
 # 2. Define Agent Toolbox
 @tool
@@ -41,7 +49,13 @@ def read_file(filename: str) -> str:
     except Exception as e:
         return f"read FAILED: {str(e)}"
 
-tools = [calculate, write_file, read_file]
+# Integrated Tavily Search Tool
+web_search = TavilySearchResults(
+    max_results=3,
+    description="Searches the web for up-to-date real-time facts, news, and external documentation."
+)
+
+tools = [calculate, write_file, read_file, web_search]
 
 # 3. Initialize Deepseek LLM engin
 llm = ChatOpenAI(
