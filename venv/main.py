@@ -6,9 +6,11 @@ from dotenv import load_dotenv
 from simpleeval import simple_eval
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
+from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langchain.agents import create_agent
 from langchain_tavily import TavilySearch
+from langgraph.types import Command
 
 load_dotenv()
 
@@ -23,7 +25,7 @@ class AgentLogger:
 
     @staticmethod
     def log_thought(content: str):
-        print(f"\031[36m[REASONING / CoT]:\033[0m\n{content}")
+        print(f"\033[36m[REASONING / CoT]:\033[0m\n{content}")
 
     @staticmethod
     def log_tool_call(tool_name: str, args: dict, call_id: str):
@@ -43,6 +45,13 @@ class AgentLogger:
     def log_state_delta(step: int, msg_type: str):
         timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
         print(f"\033[90m[TRACE {timestamp}] Step {step} | State Ingest: {msg_type}\033[0m")
+
+    @staticmethod
+    def log_hitl_warning(tool_name: str, args: dict):
+        print(f"\n\033[1;31m[HUMAN-IN-THE-LOOP INTERCEPTED]\033[0m")
+        print(f"Agent requested high-risk operation:")
+        print(f"  ├─ Target Action: {tool_name}")
+        print(f"  └─ Proposed Args: {json.dumps(args, ensure_ascii=False)}")
 
 # 1. Verify environment parameters(API KEY)
 api_key = os.getenv("DEEPSEEK_API_KEY")
@@ -66,7 +75,7 @@ def calculate(expression: str) -> str:
 
 @tool
 def write_file(filename: str, content: str) -> str:
-    """writes content into file, autocreation if undefined"""
+    """writes content into file, autocreation if undefined, when naming a autocreated file, in addition to its name, add a time stamp and a agent signiture"""
     try:
         with open(filename, "w", encoding="utf-8") as f:
             f.write(content)
@@ -93,7 +102,26 @@ def web_search(query: str):
     except Exception as e:
         return f"Search FAILED: {str(e)}"
 
-tools = [calculate, write_file, read_file, web_search]
+@tool
+def list_dir(path: str = ".") -> str:
+    """Lists all files and directories in the specified local directory path. Default is current directory '.'"""
+    try:
+        files = os.listdir(path)
+        if not files:
+            return "Directory is empty."
+        return "Files in directory:\n" + "\n".join([f"- {f}" for f in files])
+    except Exception as e:
+        return f"list_dir FAILED: {str(e)}"
+
+@tool
+def system_clock() -> str:
+    """returns the current time from year to seconds of the system"""
+    try:
+        return f"The current system time in day/month/year, hour/minute/second is {datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}"
+    except Exception as e:
+        return f"system_clock FAILED: {str(e)}"
+
+tools = [calculate, write_file, read_file, web_search, list_dir, system_clock]
 
 # 3. Initialize Deepseek LLM engin
 llm = ChatOpenAI(
@@ -106,8 +134,96 @@ llm = ChatOpenAI(
 # 4. Set memory Saver
 memory = MemorySaver()
 
+SYSTEM_PROMPT = """You are an advanced Autonomous AI Agent executing system tasks.
+
+                [LANGUAGE REQUIREMENT]
+                - You MUST reply and reason in the language the user is using.
+
+                [EXECUTION PROTOCOL]
+                For EVERY iteration, you MUST structure your thought process into the following sections BEFORE taking any action:
+
+                1. <thought>: Analyze the current state, what information is missing, and what step to take next.
+                2. <plan>: Outline the immediate next step (e.g., call a tool or present the final answer).
+
+                [TOOL RULES]
+                - For math operations, ALWAYS use 'calculate'.
+                - Before writing files, read existing content if applicable.
+                """
+                            
 # 5. Set up standard ReAct Agent
-agent = create_agent(llm, tools, checkpointer=memory)
+agent = create_agent(llm, 
+                     tools, 
+                     checkpointer=memory, 
+                     system_prompt=SYSTEM_PROMPT,
+                     interrupt_before=["tools"])
+
+def run_agent_loop(payload, config):
+    events = agent.stream(
+        payload,
+        config=config,
+        stream_mode="updates"
+    )
+    
+    step_count = 0
+    final_response = ""
+
+    for event in events:
+        step_count += 1
+
+        if not isinstance(event, dict):
+            continue
+        
+        for node_name, node_update in event.items():
+
+            if not isinstance(node_update, dict):
+                continue
+
+            messages = node_update.get("messages", [])
+            for msg in messages:
+                AgentLogger.log_state_delta(step_count, f"Node [{node_name}] -> {msg.__class__.__name__}")
+
+                if msg.type == "ai":
+                    if msg.content:
+                        AgentLogger.log_thought(msg.content)
+                        final_response = msg.content
+
+                    if msg.tool_calls:
+                        for tc in msg.tool_calls:
+                            AgentLogger.log_tool_call(tc['name'], tc['args'], tc['id'])
+                            
+                elif msg.type == "tool":
+                    AgentLogger.log_tool_result(msg.name, msg.content, msg.tool_call_id)
+
+    snapshot = agent.get_state(config)
+    
+    if snapshot.next and "tools" in snapshot.next:
+        # get next agent step
+        last_msg = snapshot.values["messages"][-1]
+        
+        if last_msg.tool_calls:
+            for tc in last_msg.tool_calls:
+                # risk evaluation
+                if tc["name"] == "write_file":
+                    AgentLogger.log_hitl_warning(tc["name"], tc["args"])
+                    
+                    user_approval = input("\n[HUMAN INPUT REQUIRED] Approve operation? (y/n): ").strip().lower()
+                    
+                    if user_approval == 'y':
+                        print("\033[32m[APPROVED] Executing operation...\033[0m")
+                        return run_agent_loop(None, config)
+                    else:
+                        print("\033[31m[DENIED] Operation canceled by human. Feeding refusal back to Agent...\033[0m")
+                        denial_message = {
+                            "role": "tool",
+                            "tool_call_id": tc["id"],
+                            "name": tc["name"],
+                            "content": "User Rejected Operation: Permission denied by human supervisor."
+                        }
+                        return run_agent_loop({"messages": [denial_message]}, config)
+                else:
+                    return run_agent_loop(None, config)
+
+    return final_response
 
 # 6. Interactive interface
 def main():
@@ -130,44 +246,8 @@ def main():
             
             #print("\nthinking....\n")
             AgentLogger.log_header("AGENT INFERENCE LOOP START")
-
-            # process progress
-            events = agent.stream(
-                {"messages": [("user", user_input)]},
-                config=config,
-                stream_mode="updates"
-            )
-
-            step_count = 0
-            final_response = ""
+            final_resp = run_agent_loop({"messages": [("user", user_input)]}, config)
             
-            #latest_message = None
-            for event in events:
-                step_count += 1
-
-                for node_name, node_update in event.items():
-                    messages = node_update.get("messages", [])
-                    for msg in messages:
-                        AgentLogger.log_state_delta(step_count, f"Node [{node_name}] -> {msg.__class__.__name__}")
-
-                        if msg.type == "ai":
-                            if msg.content:
-                                AgentLogger.log_thought(msg.content)
-                                final_response = msg.content
-
-                            if msg.tool_calls:
-                                for tc in msg.tool_calls:
-                                    AgentLogger.log_tool_call(
-                                        tool_name=tc['name'],
-                                        args=tc['args'],
-                                        call_id=tc['id']
-                                    )
-                        elif msg.type == "tool":
-                            AgentLogger.log_tool_result(
-                                tool_name=msg.name,
-                                result=msg.content,
-                                call_id=msg.tool_call_id
-                            )
             '''
                 latest_message = event["messages"][-1]
                 
@@ -181,7 +261,8 @@ def main():
                 print(f"\nAgent:\n{latest_message.content}")
             '''
             AgentLogger.log_header("AGENT INFERENCE LOOP END")
-            print(f"\n\033[1;35m[FINAL OUTPUT]:\033[0m\n{final_response}")
+            if final_resp:
+                print(f"\n\033[1;35m[FINAL OUTPUT]:\033[0m\n{final_resp}")
                 
         except Exception as e:
             print(f"\nERROR[runtime error]: {str(e)}")
