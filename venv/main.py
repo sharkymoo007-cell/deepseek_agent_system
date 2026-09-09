@@ -1,5 +1,5 @@
 from src.logger import AgentLogger
-from src.core.engine import run_agent_loop
+from src.core.engine import run_multi_agent_pipeline
 
 def main():
     print("=" * 60)
@@ -18,9 +18,9 @@ def main():
                 print("Goodbye! Exiting system...")
                 break
             
-            AgentLogger.log_header("AGENT INFERENCE LOOP START")
-            final_resp = run_agent_loop({"messages": [("user", user_input)]}, config)
-            AgentLogger.log_header("AGENT INFERENCE LOOP END")
+            AgentLogger.log_header("AGENT INFERENCE START")
+            final_resp = run_multi_agent_pipeline(user_input, config)
+            AgentLogger.log_header("AGENT INFERENCE END")
             
             if final_resp:
                 print(f"\n\033[1;35m[FINAL OUTPUT]:\033[0m\n{final_resp}")
