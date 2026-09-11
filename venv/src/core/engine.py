@@ -1,10 +1,13 @@
+import os
 from src.core.main_agent import create_initial_plan, review_and_replan
 from src.core.sub_agent import WORKER_MAP
 from src.logger import AgentLogger
 from src.memory.vector_store import memory_store
 from src.memory.context_governor import context_governor
 
-def run_multi_agent_pipeline(user_input: str, config: dict) -> str:
+TEMPORARY_MEMORY_PATH = "./temporary_db/temp_mem.txt"
+
+def run_multi_agent_pipeline(user_input: str, config: dict, previous_agent_raw: str = "") -> str:
     # 1. main agent generate initial roadmap
     AgentLogger.log_header("MAIN: CREATING EXECUTION PLAN")
     plan = create_initial_plan(user_input)   # initialize Plan
@@ -21,6 +24,10 @@ def run_multi_agent_pipeline(user_input: str, config: dict) -> str:
         current_subtask = plan.subtasks[plan.current_task_index]
         agent_name = current_subtask.assigned_Agent
 
+        if step_count-1:
+            with open(TEMPORARY_MEMORY_PATH, "r", encoding="utf-8") as f:
+                previous_agent_raw = f.read()
+
         AgentLogger.log_header(f"STEP {step_count}: DISPATCHING TO [{agent_name.upper()}]")
         print(f"\033[33m[TASK EXECUTION]\033[0m: {current_subtask.task_description}")
 
@@ -31,10 +38,14 @@ def run_multi_agent_pipeline(user_input: str, config: dict) -> str:
         else:
             # Execute sub_agent loop
             response = worker_agent.invoke(
-                {"messages": [("user", current_subtask.task_description)]},
+                {"messages": [("user", current_subtask.task_description+"\n---\nLast Agent's output\n---\n"+previous_agent_raw)]},
                 config=config
             )
             last_output = response["messages"][-1].content
+            if os.path.exists(TEMPORARY_MEMORY_PATH):
+                os.remove(TEMPORARY_MEMORY_PATH)
+            with open(TEMPORARY_MEMORY_PATH, "w", encoding="utf-8") as f:
+                f.write(last_output)
 
             # Governance: Persist raw result to Long-Term Semantic VectorDB
             memory_store.save_task_memory(
@@ -51,7 +62,7 @@ def run_multi_agent_pipeline(user_input: str, config: dict) -> str:
 
         # 3. Manager reviews worker output and dynamically replans trajectory
         AgentLogger.log_header(f"MAIN: REVIEWING TASK {current_subtask.task_id} RESULT")
-        plan = review_and_replan(plan, last_output)
+        plan = review_and_replan(plan, compressed_result)
         
         if plan.is_completed:
             break

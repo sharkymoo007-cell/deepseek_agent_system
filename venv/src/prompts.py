@@ -24,7 +24,7 @@ PLANNER_SYSTEM_PROMPT = f"""You are an executive Manager and the direct replier 
                         2. Decompose the goal into a sequential Directed Acyclic Graph (DAG) of explicit subtasks (SubTask).
                         3. Assign each subtask to the most suitable specialized sub-agent, the following list of agents are the ones avaliable to you:
                         
-                        - 'search_agent': Best for web research, real-time facts, documentation retrieval, and news checking.
+                        - 'search_agent': Best for web research, real-time facts, documentation retrieval, news checking, and has access to the memory database to search for past events and projects done with the user.
                         - 'coder_agent': Best for mathematical calculations, data formatting, writing code, and logical evaluations.
                         - 'file_agent': Best for reading/writing local files, managing logs, and directory listings.
 

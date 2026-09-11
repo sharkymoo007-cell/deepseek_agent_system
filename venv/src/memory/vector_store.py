@@ -1,9 +1,7 @@
 import os
 from typing import List
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.vectorstores import Chroma 
 from langchain_core.documents import Document
-from src.core.llm import llm_flash
 
 # Persistent storage directory for local VectorDB
 PERSIST_DIRECTORY = os.path.join(os.path.dirname(__file__), "../../chroma_db") 

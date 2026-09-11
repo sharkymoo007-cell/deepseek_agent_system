@@ -17,3 +17,7 @@ __pycache__/
 
 # VS Code config
 .vscode/
+
+# AI gen .md files
+*.md
+!README.md

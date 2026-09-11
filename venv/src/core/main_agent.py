@@ -1,6 +1,6 @@
 import re
 from langchain_core.messages import SystemMessage, HumanMessage
-from src.core.llm import llm_pro
+from src.core.llm import llm_flash
 from langchain_core.output_parsers import PydanticOutputParser
 from src.core.schemas import ExecutionPlan
 from src.prompts import PLANNER_SYSTEM_PROMPT, REPLANNER_SYSTEM_PROMPT
@@ -18,7 +18,7 @@ def invoke_llm_with_hard_defense(messages: list, max_retries: int = 3) -> Execut
     current_messages = list(messages)
     
     for attempt in range(max_retries):
-        response = llm_pro.invoke(current_messages)
+        response = llm_flash.invoke(current_messages)
         raw_text = response.content
     
         try:

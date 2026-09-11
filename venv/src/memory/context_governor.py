@@ -6,7 +6,7 @@ class ContextGovernor:
     """Manages short-term context windows by dynamically summarizing large worker outputs."""
 
     @staticmethod
-    def compress_observation(raw_output: str, max_length: int = 1600) -> str:
+    def compress_observation(raw_output: str, max_length: int = 500) -> str:
         """If observation exceeds max length, compress it using the LLM before returning to Manager."""
         if len(raw_output) <= max_length:
             return raw_output
