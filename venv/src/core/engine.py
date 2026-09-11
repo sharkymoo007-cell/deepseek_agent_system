@@ -1,11 +1,13 @@
 from src.core.main_agent import create_initial_plan, review_and_replan
 from src.core.sub_agent import WORKER_MAP
 from src.logger import AgentLogger
+from src.memory.vector_store import memory_store
+from src.memory.context_governor import context_governor
 
 def run_multi_agent_pipeline(user_input: str, config: dict) -> str:
     # 1. main agent generate initial roadmap
     AgentLogger.log_header("MAIN: CREATING EXECUTION PLAN")
-    plan = create_initial_plan(user_input)
+    plan = create_initial_plan(user_input)   # initialize Plan
 
     print(f"\033[35m[MANAGER PLAN INITIALIZED]\033[0m Goal: {plan.original_goal}")
     for st in plan.subtasks:
@@ -33,7 +35,19 @@ def run_multi_agent_pipeline(user_input: str, config: dict) -> str:
                 config=config
             )
             last_output = response["messages"][-1].content
-            AgentLogger.log_thought(f"Sub_agent Observation:\n{last_output}")
+
+            # Governance: Persist raw result to Long-Term Semantic VectorDB
+            memory_store.save_task_memory(
+                task_id=current_subtask.task_id,
+                task_desc=current_subtask.task_description,
+                worker=current_subtask.assigned_Agent,
+                result=last_output
+            )
+            
+            # Compress observation for Manager's Short-Term Context
+            compressed_result = context_governor.compress_observation(last_output, max_length=600)
+
+            AgentLogger.log_thought(f"Sub_agent Observation:\n{compressed_result}")
 
         # 3. Manager reviews worker output and dynamically replans trajectory
         AgentLogger.log_header(f"MAIN: REVIEWING TASK {current_subtask.task_id} RESULT")
