@@ -21,3 +21,6 @@ __pycache__/
 # AI gen .md files
 *.md
 !README.md
+
+# memory database
+chroma_db/

@@ -49,3 +49,30 @@ def system_clock() -> str:
         return f"The current system time in day/month/year, hour/minute/second is {datetime.now().strftime('%d/%m/%Y, %H:%M:%S')}"
     except Exception as e:
         return f"system_clock FAILED: {str(e)}"
+
+@tool
+def create_directory(new_directory: str = "./new_directory") -> str:
+    """create new directory under specified path"""
+    try:
+        os.mkdir(new_directory)
+        return f"New directory created at: {new_directory}"
+    except Exception as e:
+        return f"create_directory FAILED: {str(e)}"
+
+@tool
+def delete_file(filename: str) -> str:
+    """delete specified file"""
+    try:
+        os.remove(filename)
+        return f"File {filename} has been deleted successfully"
+    except Exception as e:
+        return f"delete_file FAILED: {str(e)}"
+
+@tool
+def delete_directory(directory: str) -> str:
+    """delete specified directory"""
+    try:
+        os.removedirs(directory)
+        return f"Directory {directory} has been removed successfully"
+    except Exception as e:
+        return f"delete_directory FAILED: {str(e)}"

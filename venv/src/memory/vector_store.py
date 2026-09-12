@@ -17,10 +17,12 @@ class AgentMemoryStore:
             persist_directory=PERSIST_DIRECTORY
         )
 
-    def save_task_memory(self, task_id: int, task_desc: str, worker: str, result: str):
+    def save_task_memory(self, time_stamp: str, main_task: str, task_id: int, task_desc: str, worker: str, result: str):
         """Persist a completed task observation as a searchable document vector."""
         content = f"Task ID: {task_id}\nWorker: {worker}\nDescription: {task_desc}\nResult:\n{result}"
         metadata = {
+            "date_of_event": time_stamp,
+            "main_task": main_task,
             "task_id": str(task_id),
             "worker": worker,
             "type": "task_observation"

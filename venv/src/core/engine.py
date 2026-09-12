@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from src.core.main_agent import create_initial_plan, review_and_replan
 from src.core.sub_agent import WORKER_MAP
 from src.logger import AgentLogger
@@ -49,6 +50,8 @@ def run_multi_agent_pipeline(user_input: str, config: dict, previous_agent_raw: 
 
             # Governance: Persist raw result to Long-Term Semantic VectorDB
             memory_store.save_task_memory(
+                time_stamp=f"Date of event:{datetime.now().strftime("%d/%m/%Y")}",
+                main_task=plan.original_goal,
                 task_id=current_subtask.task_id,
                 task_desc=current_subtask.task_description,
                 worker=current_subtask.assigned_Agent,
@@ -65,6 +68,8 @@ def run_multi_agent_pipeline(user_input: str, config: dict, previous_agent_raw: 
         plan = review_and_replan(plan, compressed_result)
         
         if plan.is_completed:
+            if os.path.exists(TEMPORARY_MEMORY_PATH):
+                os.remove(TEMPORARY_MEMORY_PATH)
             break
 
     if plan.final_summary:
